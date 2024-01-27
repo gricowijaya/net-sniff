@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# Default values
+TIME=10
+OUTPUT_NAME="output"
+
+# Parse flags
+while getopts ":t:o:" opt; do
+ case ${opt} in
+    t )
+      TIME=$OPTARG
+      ;;
+    n )
+      OUTPUT_NAME=$OPTARG
+      ;;
+    \? )
+      echo "Invalid Option: -$OPTARG" 1>&2
+      exit 1
+      ;;
+    : )
+      echo "Invalid Option: -$OPTARG requires an argument" 1>&2
+      exit 1
+      ;;
+ esac
+done
+shift $((OPTIND -1))
+
+# Check if iwconfig is available
+if ! command -v iwconfig > /dev/null; then
+    echo "Error: iwconfig is not installed" >&2
+    exit 1
+fi
+
+# Check if tcpdump is available
+if ! command -v tcpdump > /dev/null; then
+    echo "Error: tcpdump is not installed" >&2
+    exit 1
+fi
+
+# Check if tshark is available
+if ! command -v tshark > /dev/null; then
+    echo "Error: tshark is not installed" >&2
+    exit 1
+fi
+
+# Detect wireless interface
+WIRELESS_INTERFACE=$(iwconfig 2>/dev/null | grep 'IEEE 802.11' | awk '{print $1}')
+
+# Check if wireless interface was detected
+if [ -z "$WIRELESS_INTERFACE" ]; then
+    echo "Error: No wireless interface detected" >&2
+    exit 1
+fi
+
+FILE=${OUTPUT_NAME}.pcap
+ANALYZED_FILE=${OUTPUT_NAME}.txt
+ANALYZED_FILE_DETAILS=${OUTPUT_NAME}.details.txt
+
+
+# Start tcpdump for 60 seconds
+sudo timeout $TIME tcpdump -nn -i $WIRELESS_INTERFACE -w $FILE
+
+# Check if tcpdump failed due to timeout
+if [ $? -eq 124 ]; then
+    echo "tcpdump timed out"
+    tshark -r $FILE > $ANALYZED_FILE
+    tshark -r $FILE -V > $ANALYZED_FILE_DETAILS
+else
+
+    # Check if tcpdump failed for another reason
+    if [ $? -ne 0 ]; then
+        echo "tcpdump failed"
+    else
+        # Start tshark
+        tshark -r $FILE > $ANALYZED_FILE
+        tshark -r $FILE -V > $ANALYZED_FILE_DETAILS
+
+        # Send a notification
+        echo "tcpdump and tshark have finished"
+    fi
+fi
