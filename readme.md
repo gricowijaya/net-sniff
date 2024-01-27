@@ -4,6 +4,12 @@ This script will analyze the wireless interface of your computer to sniff your n
 
 # How to use this script 
 
+make the `sniff` script to be executable using 
+
+```bash
+chmod -x sniff
+```
+
 Pass the flag of:
 
 - `-t` for providing the seconds of time such as `-t 10` for 10 seconds or `-t 100` for 100 seconds 
@@ -11,7 +17,13 @@ Pass the flag of:
 
 example: 
 
-`./sniff -t 10 -o my-network-traffic`
+```bash
+./sniff -t 10 -o my-network-traffic
+```
+
+## Demo Video
+
+~[demo](./demo/video.mp4)
 
 # Analyzying the Network Traffic
 
